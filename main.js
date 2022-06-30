@@ -267,6 +267,13 @@ function updateUi() {
   }
 }
 
+function newGame() {
+  if (undoStack.length == 0 || game.checkEnd() != UNDECIDED || window.confirm('Are you sure you want to abort your current game?')) {
+    window.location.hash = ''
+    restart()
+  }
+}
+
 function showHint() {
   const solution = solve(game)
   if (solution) {
@@ -274,7 +281,23 @@ function showHint() {
     document.getElementById(`card_${coord}`).classList.add('hint-from')
     document.getElementById(`card_${game.pawns[pawn]}`).classList.add('hint-to')
   } else {
-    alert('Unwinnable')
+    let solvable
+    if (undoStack.length > 0) {
+      const origPawns = [...game.pawns]
+      game.pawns = undoStack[0]
+      solvable = !!solve(game)
+      game.pawns = origPawns
+    } else {
+      solvable = false
+    }
+    if (solvable) {
+      alert('The game cannot be won from this position, but there is another way. Undo some moves and try a different route.')
+    } else {
+      if (confirm('This appears to be one of those 12-13% of games that are unwinnable. Too bad! Start a new game?')) {
+        window.location.hash = ''
+        restart()
+      }
+    }
   }
 }
 
@@ -335,6 +358,7 @@ function restart() {
 }
 
 function init() {
+  document.getElementById('new-game-button').addEventListener('click', newGame)
   document.getElementById('hint-button').addEventListener('click', showHint)
   document.getElementById('undo-button').addEventListener('click', undo)
   document.getElementById('restart-button').addEventListener('click', function() {
