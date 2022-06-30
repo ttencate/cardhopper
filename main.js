@@ -89,12 +89,36 @@ class Game {
 }
 
 function solve(game) {
+  // For each card, precalculate and cache shortest possible route length to
+  // the hole for use in A* heuristic.
+  // https://www.redblobgames.com/grids/hexagons/#distances-axial
+  const [hi, hj] = unmakeCoord(HOLE_COORD)
+  const distancesToHole = game.board.map((_, coord) => {
+    const [ci, cj] = unmakeCoord(coord)
+    return (
+      Math.abs(ci - hi) +
+      Math.abs(ci + cj - hi - hj) +
+      Math.abs(cj - hj)
+    ) / 2
+  })
+  function minRemainingSteps(pawns) {
+    let steps = 0
+    for (const pawn of pawns) {
+      steps += distancesToHole[pawn]
+    }
+    return steps
+  }
+
   const origPawns = game.pawns
-  const queue = [[game.pawns, []]]
+  const queue = new Heap(
+    [[minRemainingSteps(game.pawns), game.pawns, []]],
+    function(a, b) {
+      return a[0] - b[0]
+    })
   const visited = {}
   let solution = null
-  while (queue.length > 0) {
-    const [pawns, steps] = queue.shift()
+  while (!queue.isEmpty()) {
+    const [heuristic, pawns, steps] = queue.pop()
     if (pawns.length == 0) {
       solution = steps
       break
@@ -110,11 +134,12 @@ function solve(game) {
       game.pawns = pawns
       const validMoves = game.validMovesFor(pawn)
       for (const move of validMoves) {
-        game.pawns = pawns.slice()
+        game.pawns = [...pawns]
         game.move(pawn, move)
-        const nextSteps = steps.slice()
-        nextSteps.push([pawn, move])
-        queue.push([game.pawns, nextSteps])
+        const nextPawns = game.pawns
+        const nextSteps = [...steps, [pawn, move]]
+        const nextHeuristic = nextSteps.length + minRemainingSteps(nextPawns)
+        queue.push([nextHeuristic, nextPawns, nextSteps])
       }
     })
   }
@@ -162,6 +187,7 @@ function crunch() {
       crunchTimer = setTimeout(tickCrunch, 0)
     }, 0)
   } else {
+    console.log('Stopping crunch')
     clearTimeout(crunchTimer)
     crunchTimer = null
   }
