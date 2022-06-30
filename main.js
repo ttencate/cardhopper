@@ -15,8 +15,9 @@ const LOST = -1
 const UNDECIDED = 0
 
 class Game {
-  constructor() {
-    this.board = Game.randomBoard()
+  constructor(seed) {
+    const rng = new PcgRandom(seed)
+    this.board = Game.randomBoard(rng)
     this.pawns = [
       makeCoord(0, 0),
       makeCoord(0, N - 1),
@@ -24,7 +25,7 @@ class Game {
     ]
   }
 
-  static randomBoard() {
+  static randomBoard(rng) {
     const cards = []
     const cardsNeeded = N * (N + 1) / 2 - 1
     while (cards.length < cardsNeeded) {
@@ -32,7 +33,7 @@ class Game {
         cards.push(card)
       }
     }
-    shuffle(cards)
+    shuffle(cards, rng)
 
     const board = []
     for (let i = 0; i < N; i++) {
@@ -127,31 +128,35 @@ function crunch() {
   if (crunchTimer === null) {
     const output = document.getElementById('crunch')
     console.log('Starting crunch, run crunch() again to stop')
+    const seeds = new PcgRandom()
     let count = 0
     let unstartable = 0
     let unwinnable = 0
     let winnable = 0
-    let minWinSteps = []
+    let seedsBySteps = []
     crunchTimer = setTimeout(function tickCrunch() {
-      const game = new Game()
+      const seed = seeds.next32()
+      const game = new Game(seed)
       if (game.checkEnd() == LOST) {
         unstartable++
       }
       const solution = solve(game)
       if (solution) {
         winnable++
-        minWinSteps[solution.length] = (minWinSteps[solution.length] || 0) + 1
+        seedsBySteps[solution.length] = seedsBySteps[solution.length] || []
+        seedsBySteps[solution.length].push(seed)
       } else {
         unwinnable++
       }
       count++
       if (count % 10 == 0) {
         output.innerText = [
-          `${count} random boards tested:`,
-          `unstartable: ${unstartable} = ${(unstartable / count * 100).toFixed(1)}%`,
-          `unwinnable:  ${unwinnable} = ${(unwinnable / count * 100).toFixed(1)}%`,
-          `winnable:    ${winnable} = ${(winnable / count * 100).toFixed(1)}%`,
-          `step counts: ${minWinSteps.map((c, s) => c > 0 ? `${s}: ${c}` : '').filter((str) => !!str).join(', ')}`,
+          `Total:       ${count}`,
+          `Unstartable: ${unstartable} = ${(unstartable / count * 100).toFixed(1)}%`,
+          `Unwinnable:  ${unwinnable} = ${(unwinnable / count * 100).toFixed(1)}%`,
+          `Winnable:    ${winnable} = ${(winnable / count * 100).toFixed(1)}%`,
+          `Step counts: ${seedsBySteps.map((c, s) => c ? `${s}: ${c.length}` : '').filter((str) => !!str).join(', ')}`,
+          `Seeds for ${seedsBySteps.length - 1} steps: ${seedsBySteps[seedsBySteps.length - 1].join(', ')}`,
         ].join('\n')
       }
       crunchTimer = setTimeout(tickCrunch, 0)
@@ -166,10 +171,10 @@ function crunch() {
 // UTILS
 // -----------------------------------------------------------------------------
 
-function shuffle(array) {
+function shuffle(array, rng) {
   const n = array.length;
   for (let i = 0; i < n; i++) {
-    const j = i + Math.floor(Math.random() * (n - i))
+    const j = i + rng.integer(n - i)
     const tmp = array[i]
     array[i] = array[j]
     array[j] = tmp
@@ -231,12 +236,38 @@ function updateUi() {
   }
 }
 
-function init() {
-  game = new Game()
+function showHint() {
+  const solution = solve(game)
+  if (solution) {
+    const [pawn, coord] = solution[0]
+    document.getElementById(`card_${coord}`).classList.add('hint')
+  } else {
+    alert('Unwinnable')
+  }
+}
+
+function undo() {
+  if (undoStack.length > 0) {
+    game.pawns = undoStack.pop()
+    updateUi()
+  }
+}
+
+function restart() {
+  let seed
+  if (/#[0-9]{1,10}/.test(window.location.hash)) {
+    seed = parseInt(window.location.hash.substr(1))
+  } else {
+    seed = Math.floor(Math.random() * 0xffffffff)
+    window.location.hash = `#${seed}`
+  }
+
+  game = new Game(seed)
   selected = null
   undoStack = []
 
   const boardDiv = document.getElementById('board')
+  boardDiv.innerHTML = ''
   game.board.forEach((card, coord) => {
     const [i, j] = unmakeCoord(coord)
     const cardDiv = document.createElement('div')
@@ -250,28 +281,12 @@ function init() {
     cardDiv.addEventListener('click', onCardClick)
     boardDiv.appendChild(cardDiv)
   })
+
   updateUi()
-
-  document.getElementById('hint-button').addEventListener('click', function() {
-    const solution = solve(game)
-    if (solution) {
-      const [pawn, coord] = solution[0]
-      document.getElementById(`card_${coord}`).classList.add('hint')
-    } else {
-      alert('Unwinnable')
-    }
-  })
-
-  document.getElementById('undo-button').addEventListener('click', function() {
-    if (undoStack.length > 0) {
-      game.pawns = undoStack.pop()
-      updateUi()
-    }
-  })
 
   const solution = solve(game)
   if (solution) {
-    const lines = ['Solution steps:']
+    const lines = [`Solvable in ${solution.length} steps:`]
     solution.forEach(([pawn, coord]) => {
       const card = game.board[coord]
       if (card == HOLE) {
@@ -285,6 +300,17 @@ function init() {
   } else {
     console.log('Unsolvable')
   }
+}
+
+function init() {
+  document.getElementById('hint-button').addEventListener('click', showHint)
+  document.getElementById('undo-button').addEventListener('click', undo)
+  document.getElementById('restart-button').addEventListener('click', function() {
+    window.location.hash = ''
+    restart()
+  })
+
+  restart()
 }
 
 document.addEventListener('DOMContentLoaded', init)

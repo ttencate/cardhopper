@@ -3,18 +3,19 @@
   <head>
     <title>Card Hopper</title>
     <link rel="stylesheet" href="style.css">
+    <script src="pcg-random.js"></script>
     <script src="main.js"></script>
   </head>
   <body>
     <div id="board" class="board"></div>
+    <pre id="crunch" class="crunch"></pre>
     <div id="end" class="overlay hidden">
       <span id="endtext"></span>
-      <button id="restart" onclick="location.reload()">Play Again</button>
+      <button id="restart-button">Play Again</button>
     </div>
     <div class="corner">
       <button id="undo-button">Undo</button>
       <button id="hint-button">Hint</button>
-      <pre id="crunch" class="crunch"></pre>
     </div>
   </body>
 </html>
