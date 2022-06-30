@@ -2,7 +2,7 @@ html, body {
   margin: 0;
   padding: 0;
   font-family: sans-serif;
-  font-size: 14vmin;
+  font-size: 12vmin;
 }
 
 body {
@@ -26,8 +26,8 @@ button {
 
 .board {
   position: relative;
-  width: 6.06217782649107rem;
-  height: 7rem;
+  width: 6.928203230275509rem;
+  height: 8rem;
   user-select: none;
 }
 

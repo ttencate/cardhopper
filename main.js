@@ -4,8 +4,8 @@
 // GAME
 // -----------------------------------------------------------------------------
 
-const N = 7
-const HOLE_COORD = makeCoord(2, 2)
+const N = 8
+const HOLE_COORD = makeCoord(2, 3)
 const [MIN_CARD, MAX_CARD] = [1, 9]
 
 const HOLE = -1
@@ -126,7 +126,7 @@ let crunchTimer = null
 function crunch() {
   if (crunchTimer === null) {
     const output = document.getElementById('crunch')
-    console.log('Starting crunch, run stopCrunch() to stop')
+    console.log('Starting crunch, run crunch() again to stop')
     let count = 0
     let unstartable = 0
     let unwinnable = 0
@@ -156,11 +156,7 @@ function crunch() {
       }
       crunchTimer = setTimeout(tickCrunch, 0)
     }, 0)
-  }
-}
-
-function stopCrunch() {
-  if (crunchTimer !== null) {
+  } else {
     clearTimeout(crunchTimer)
     crunchTimer = null
   }
