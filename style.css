@@ -61,7 +61,7 @@ button {
   border-color: #24f;
 }
 
-.card.somevalid {
+.card.some-valid {
   border-color: #dfd;
 }
 
@@ -74,8 +74,16 @@ button {
   cursor: pointer;
 }
 
-.card.hint {
-  background-color: #bfa;
+.card.hint-from::after,
+.card.hint-to::after {
+  position: absolute;
+  content: ' ';
+  left: -0.1rem;
+  top: -0.1rem;
+  right: -0.1rem;
+  bottom: -0.1rem;
+  border-radius: 50%;
+  border: 0.1rem dotted black;
 }
 
 .corner {

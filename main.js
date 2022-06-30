@@ -251,8 +251,9 @@ function updateUi() {
     cardDiv.classList.toggle('pawn', game.pawns.includes(coord))
     cardDiv.classList.toggle('selected', game.pawns[selected] == coord)
     cardDiv.classList.toggle('valid', selected !== null && game.validMovesFor(selected).includes(coord))
-    cardDiv.classList.toggle('somevalid', game.pawns.some((_, pawn) => game.validMovesFor(pawn).includes(coord)))
-    cardDiv.classList.remove('hint')
+    cardDiv.classList.toggle('some-valid', game.pawns.some((_, pawn) => game.validMovesFor(pawn).includes(coord)))
+    cardDiv.classList.remove('hint-from')
+    cardDiv.classList.remove('hint-to')
   })
 
   document.getElementById('undo-button').disabled = undoStack.length == 0
@@ -270,7 +271,8 @@ function showHint() {
   const solution = solve(game)
   if (solution) {
     const [pawn, coord] = solution[0]
-    document.getElementById(`card_${coord}`).classList.add('hint')
+    document.getElementById(`card_${coord}`).classList.add('hint-from')
+    document.getElementById(`card_${game.pawns[pawn]}`).classList.add('hint-to')
   } else {
     alert('Unwinnable')
   }
