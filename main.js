@@ -123,7 +123,7 @@ function solve(game) {
 
 let crunchTimer = null
 
-function startCrunch() {
+function crunch() {
   if (crunchTimer === null) {
     const output = document.getElementById('crunch')
     console.log('Starting crunch, run stopCrunch() to stop')
@@ -131,23 +131,29 @@ function startCrunch() {
     let unstartable = 0
     let unwinnable = 0
     let winnable = 0
+    let minWinSteps = []
     crunchTimer = setTimeout(function tickCrunch() {
       const game = new Game()
       if (game.checkEnd() == LOST) {
         unstartable++
       }
-      if (solve(game)) {
+      const solution = solve(game)
+      if (solution) {
         winnable++
+        minWinSteps[solution.length] = (minWinSteps[solution.length] || 0) + 1
       } else {
         unwinnable++
       }
       count++
-      output.innerText = [
-        `${count} random boards tested:`,
-        `unstartable: ${unstartable} = ${(unstartable / count * 100).toFixed(1)}%`,
-        `unwinnable:  ${unwinnable} = ${(unwinnable / count * 100).toFixed(1)}%`,
-        `winnable:    ${winnable} = ${(winnable / count * 100).toFixed(1)}%`,
-      ].join('\n')
+      if (count % 10 == 0) {
+        output.innerText = [
+          `${count} random boards tested:`,
+          `unstartable: ${unstartable} = ${(unstartable / count * 100).toFixed(1)}%`,
+          `unwinnable:  ${unwinnable} = ${(unwinnable / count * 100).toFixed(1)}%`,
+          `winnable:    ${winnable} = ${(winnable / count * 100).toFixed(1)}%`,
+          `step counts: ${minWinSteps.map((c, s) => c > 0 ? `${s}: ${c}` : '').filter((str) => !!str).join(', ')}`,
+        ].join('\n')
+      }
       crunchTimer = setTimeout(tickCrunch, 0)
     }, 0)
   }
