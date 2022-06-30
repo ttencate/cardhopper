@@ -195,6 +195,7 @@ function unmakeCoord(coord) {
 
 let game
 let selected
+let undoStack
 
 function onCardClick(e) {
   const cardDiv = e.target
@@ -205,25 +206,15 @@ function onCardClick(e) {
   } else if (selected !== null) {
     const validMoves = game.validMovesFor(selected)
     if (validMoves.includes(coord)) {
+      undoStack.push(game.pawns.slice())
       game.move(selected, coord)
-      showEnd(game.checkEnd())
     }
     selected = null
   }
-  updateDivs()
+  updateUi()
 }
 
-function showEnd(end) {
-  if (end == WON) {
-    document.getElementById('endtext').innerText = 'You won!'
-    document.getElementById('end').classList.remove('hidden')
-  } else if (end == LOST) {
-    document.getElementById('endtext').innerText = 'Out of moves!'
-    document.getElementById('end').classList.remove('hidden')
-  }
-}
-
-function updateDivs() {
+function updateUi() {
   game.board.forEach((card, coord) => {
     const cardDiv = document.getElementById(`card_${coord}`)
     cardDiv.classList.toggle('pawn', game.pawns.includes(coord))
@@ -232,11 +223,22 @@ function updateDivs() {
     cardDiv.classList.toggle('somevalid', game.pawns.some((_, pawn) => game.validMovesFor(pawn).includes(coord)))
     cardDiv.classList.remove('hint')
   })
+
+  document.getElementById('undo-button').disabled = undoStack.length == 0
+
+  const end = game.checkEnd()
+  document.getElementById('end').classList.toggle('hidden', end == UNDECIDED)
+  if (end == WON) {
+    document.getElementById('endtext').innerText = 'You won!'
+  } else if (end == LOST) {
+    document.getElementById('endtext').innerText = 'Out of moves!'
+  }
 }
 
 function init() {
   game = new Game()
   selected = null
+  undoStack = []
 
   const boardDiv = document.getElementById('board')
   game.board.forEach((card, coord) => {
@@ -252,8 +254,7 @@ function init() {
     cardDiv.addEventListener('click', onCardClick)
     boardDiv.appendChild(cardDiv)
   })
-  updateDivs()
-  showEnd(game.checkEnd())
+  updateUi()
 
   document.getElementById('hint-button').addEventListener('click', function() {
     const solution = solve(game)
@@ -262,6 +263,13 @@ function init() {
       document.getElementById(`card_${coord}`).classList.add('hint')
     } else {
       alert('Unwinnable')
+    }
+  })
+
+  document.getElementById('undo-button').addEventListener('click', function() {
+    if (undoStack.length > 0) {
+      game.pawns = undoStack.pop()
+      updateUi()
     }
   })
 
