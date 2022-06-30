@@ -87,6 +87,79 @@ class Game {
   }
 }
 
+function solve(game) {
+  const origPawns = game.pawns
+  const queue = [[game.pawns, []]]
+  const visited = {}
+  let solution = null
+  while (queue.length > 0) {
+    const [pawns, steps] = queue.shift()
+    if (pawns.length == 0) {
+      solution = steps
+      break
+    }
+
+    const pawnsString = pawns.join(',')
+    if (visited[pawnsString]) {
+      continue
+    }
+    visited[pawnsString] = true
+
+    pawns.forEach((_, pawn) => {
+      game.pawns = pawns
+      const validMoves = game.validMovesFor(pawn)
+      for (const move of validMoves) {
+        game.pawns = pawns.slice()
+        game.move(pawn, move)
+        const nextSteps = steps.slice()
+        nextSteps.push([pawn, move])
+        queue.push([game.pawns, nextSteps])
+      }
+    })
+  }
+  game.pawns = origPawns
+  return solution
+}
+
+let crunchTimer = null
+
+function startCrunch() {
+  if (crunchTimer === null) {
+    const output = document.getElementById('crunch')
+    console.log('Starting crunch, run stopCrunch() to stop')
+    let count = 0
+    let unstartable = 0
+    let unwinnable = 0
+    let winnable = 0
+    crunchTimer = setTimeout(function tickCrunch() {
+      const game = new Game()
+      if (game.checkEnd() == LOST) {
+        unstartable++
+      }
+      if (solve(game)) {
+        winnable++
+      } else {
+        unwinnable++
+      }
+      count++
+      output.innerText = [
+        `${count} random boards tested:`,
+        `unstartable: ${unstartable} = ${(unstartable / count * 100).toFixed(1)}%`,
+        `unwinnable:  ${unwinnable} = ${(unwinnable / count * 100).toFixed(1)}%`,
+        `winnable:    ${winnable} = ${(winnable / count * 100).toFixed(1)}%`,
+      ].join('\n')
+      crunchTimer = setTimeout(tickCrunch, 0)
+    }, 0)
+  }
+}
+
+function stopCrunch() {
+  if (crunchTimer !== null) {
+    clearTimeout(crunchTimer)
+    crunchTimer = null
+  }
+}
+
 // -----------------------------------------------------------------------------
 // UTILS
 // -----------------------------------------------------------------------------
@@ -151,6 +224,7 @@ function updateDivs() {
     cardDiv.classList.toggle('selected', game.pawns[selected] == coord)
     cardDiv.classList.toggle('valid', selected !== null && game.validMovesFor(selected).includes(coord))
     cardDiv.classList.toggle('somevalid', game.pawns.some((_, pawn) => game.validMovesFor(pawn).includes(coord)))
+    cardDiv.classList.remove('hint')
   })
 }
 
@@ -174,6 +248,33 @@ function init() {
   })
   updateDivs()
   showEnd(game.checkEnd())
+
+  document.getElementById('hint-button').addEventListener('click', function() {
+    const solution = solve(game)
+    if (solution) {
+      const [pawn, coord] = solution[0]
+      document.getElementById(`card_${coord}`).classList.add('hint')
+    } else {
+      alert('Unwinnable')
+    }
+  })
+
+  const solution = solve(game)
+  if (solution) {
+    const lines = ['Solution steps:']
+    solution.forEach(([pawn, coord]) => {
+      const card = game.board[coord]
+      if (card == HOLE) {
+        lines.push(`Pawn ${pawn + 1} into the hole (subsequent pawns now renumbered)`)
+      } else {
+        const [i, j] = unmakeCoord(coord)
+        lines.push(`Pawn ${pawn + 1} to the (${card}) at row ${i + 1}, column ${j + 1}`)
+      }
+    })
+    console.log(lines.join('\n'))
+  } else {
+    console.log('Unsolvable')
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init)
