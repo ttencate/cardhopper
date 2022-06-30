@@ -124,6 +124,7 @@ function solve(game) {
       break
     }
 
+    pawns.sort()
     const pawnsString = pawns.join(',')
     if (visited[pawnsString]) {
       continue
@@ -181,7 +182,7 @@ function crunch() {
           `Unwinnable:  ${unwinnable} = ${(unwinnable / count * 100).toFixed(1)}%`,
           `Winnable:    ${winnable} = ${(winnable / count * 100).toFixed(1)}%`,
           `Step counts: ${seedsBySteps.map((c, s) => c ? `${s}: ${c.length}` : '').filter((str) => !!str).join(', ')}`,
-          `Seeds for ${seedsBySteps.length - 1} steps: ${seedsBySteps[seedsBySteps.length - 1].join(', ')}`,
+          `Seeds for ${seedsBySteps.length - 1} steps: ${seedsBySteps[seedsBySteps.length - 1].slice(0, 5).join(', ')}`,
         ].join('\n')
       }
       crunchTimer = setTimeout(tickCrunch, 0)
