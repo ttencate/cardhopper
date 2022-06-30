@@ -114,8 +114,9 @@ function solve(game) {
     [[minRemainingSteps(game.pawns), game.pawns, []]],
     function(a, b) {
       return a[0] - b[0]
-    })
-  const visited = {}
+    }
+  )
+  const visited = new Set()
   let solution = null
   while (!queue.isEmpty()) {
     const [heuristic, pawns, steps] = queue.pop()
@@ -124,12 +125,14 @@ function solve(game) {
       break
     }
 
-    pawns.sort()
-    const pawnsString = pawns.join(',')
-    if (visited[pawnsString]) {
+    let pawnBits = 0n
+    for (const pawn of pawns) {
+      pawnBits |= 1n << BigInt(pawn)
+    }
+    if (visited.has(pawnBits)) {
       continue
     }
-    visited[pawnsString] = true
+    visited.add(pawnBits)
 
     pawns.forEach((_, pawn) => {
       game.pawns = pawns
